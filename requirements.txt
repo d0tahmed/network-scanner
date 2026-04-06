@@ -1,0 +1,8 @@
+scapy==2.5.0
+python-nmap==0.7.1
+requests==2.31.0
+flask==3.0.0
+netifaces==0.11.0
+mac-vendor-lookup==0.1.12
+python-dotenv==1.0.0
+jinja2==3.1.2

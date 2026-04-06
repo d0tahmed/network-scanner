@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner</title>
+    <style>
+
+        /* ═══════════════════════════════════════
+           RESET & BASE
+        ═══════════════════════════════════════ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary:    #0d1117;
+            --bg-secondary:  #161b22;
+            --bg-card:       #1c2128;
+            --bg-hover:      #21262d;
+            --border:        #30363d;
+            --border-bright: #484f58;
+            --text-primary:  #e6edf3;
+            --text-secondary:#8b949e;
+            --text-muted:    #484f58;
+            --blue:          #388bfd;
+            --blue-dim:      #1f3a5f;
+            --green:         #3fb950;
+            --green-dim:     #1a4a2e;
+            --red:           #f85149;
+            --red-dim:       #3d1a1a;
+            --orange:        #d29922;
+            --orange-dim:    #3d2b00;
+            --purple:        #a371f7;
+            --cyan:          #39d0d8;
+            --yellow:        #e3b341;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont,
+                         'Segoe UI', 'Noto Sans', Helvetica,
+                         Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ═══════════════════════════════════════
+           LAYOUT
+        ═══════════════════════════════════════ */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ─── Sidebar ─── */
+        .sidebar {
+            width: 240px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 20px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-logo h1 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-logo p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 8px;
+            overflow-y: auto;
+        }
+
+        .nav-section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 8px 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+            transition: all 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--blue-dim);
+            color: var(--blue);
+        }
+
+        .nav-item .nav-icon { font-size: 16px; }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 20px;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        .nav-item.active .nav-badge {
+            background: var(--blue);
+            color: white;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ─── Main ─── */
+        .main {
+            margin-left: 240px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── Topbar ─── */
+        .topbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .topbar-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ─── Content ─── */
+        .content {
+            padding: 24px;
+            flex: 1;
+        }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* ═══════════════════════════════════════
+           BUTTONS
+        ═══════════════════════════════════════ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+        .btn-primary:hover:not(:disabled) { background: #1f6feb; }
+
+        .btn-success {
+            background: var(--green);
+            color: #000;
+            border-color: var(--green);
+        }
+        .btn-success:hover:not(:disabled) { background: #2ea043; }
+
+        .btn-warning {
+            background: var(--orange);
+            color: #000;
+            border-color: var(--orange);
+        }
+        .btn-warning:hover:not(:disabled) { background: #bb8009; }
+
+        .btn-danger {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+        .btn-danger:hover:not(:disabled) { background: #da3633; }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        .btn-ghost:hover:not(:disabled) {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-bright);
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        /* ═══════════════════════════════════════
+           ALERTS / STATUS
+        ═══════════════════════════════════════ */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .alert-info {
+            background: var(--blue-dim);
+            border-color: var(--blue);
+            color: #79c0ff;
+        }
+
+        .alert-success {
+            background: var(--green-dim);
+            border-color: var(--green);
+            color: #56d364;
+        }
+
+        .alert-error {
+            background: var(--red-dim);
+            border-color: var(--red);
+            color: #ff7b72;
+        }
+
+        .alert-warning {
+            background: var(--orange-dim);
+            border-color: var(--orange);
+            color: #e3b341;
+        }
+
+        .alert-icon { font-size: 16px; flex-shrink: 0; }
+
+        /* ═══════════════════════════════════════
+           PROGRESS
+        ═══════════════════════════════════════ */
+        .progress-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .progress-track {
+            background: var(--bg-primary);
+            border-radius: 100px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 100px;
+            background: linear-gradient(90deg, var(--blue), var(--purple));
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        .progress-bar.animated {
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0%   { opacity: 1; }
+            50%  { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* ═══════════════════════════════════════
+           STATS GRID
+        ═══════════════════════════════════════ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon { font-size: 18px; }
+
+        .stat-value {
+            font-size: 2.4em;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-card.blue  .stat-value { color: var(--blue); }
+        .stat-card.green .stat-value { color: var(--green); }
+        .stat-card.red   .stat-value { color: var(--red); }
+        .stat-card.orange .stat-value { color: var(--orange); }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ═══════════════════════════════════════
+           SECTION HEADER
+        ═══════════════════════════════════════ */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-count {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        /* ═══════════════════════════════════════
+           DEVICE CARDS
+        ═══════════════════════════════════════ */
+        .devices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+
+        .device-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.15s, transform 0.15s;
+        }
+
+        .device-card:hover {
+            border-color: var(--border-bright);
+            transform: translateY(-2px);
+        }
+
+        .device-card.is-gateway {
+            border-color: var(--orange);
+        }
+
+        .device-card-header {
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .device-emoji { font-size: 24px; }
+
+        .device-name {
+            flex: 1;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .device-body {
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .device-field label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 3px;
+        }
+
+        .device-field span {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            word-break: break-all;
+        }
+
+        .device-field.full { grid-column: 1 / -1; }
+
+        /* ═══════════════════════════════════════
+           BADGES
+        ═══════════════════════════════════════ */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-blue   { background: var(--blue-dim);   color: #79c0ff; }
+        .badge-green  { background: var(--green-dim);  color: #56d364; }
+        .badge-orange { background: var(--orange-dim); color: var(--yellow); }
+        .badge-red    { background: var(--red-dim);    color: #ff7b72; }
+        .badge-purple { background: #2d1f69;           color: #c9a0fc; }
+        .badge-gray   { background: var(--bg-hover);   color: var(--text-secondary); }
+
+        /* Severity badges */
+        .sev-critical { background: #3d0000; color: #ff7b72; border: 1px solid #6e2020; }
+        .sev-high     { background: #3d1a00; color: #f0883e; border: 1px solid #6e3a1a; }
+        .sev-medium   { background: var(--orange-dim); color: var(--yellow); border: 1px solid #6e5a00; }
+        .sev-low      { background: var(--green-dim);  color: #56d364; border: 1px solid #1a5a2a; }
+        .sev-none     { background: var(--bg-hover); color: var(--text-secondary); }
+        .sev-unknown  { background: var(--bg-hover); color: var(--text-secondary); }
+
+        /* ═══════════════════════════════════════
+           PORT TABLE
+        ═══════════════════════════════════════ */
+        .host-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .host-block-header {
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .host-ip {
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+
+        .host-name {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--bg-primary);
+            padding: 8px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        tr:hover td { background: var(--bg-hover); }
+
+        .port-num {
+            font-family: monospace;
+            font-weight: 700;
+            color: var(--cyan);
+        }
+
+        .service-name { color: var(--purple); font-weight: 600; }
+
+        /* ═══════════════════════════════════════
+           CVE CARDS
+        ═══════════════════════════════════════ */
+        .cve-host-block {
+            margin-bottom: 24px;
+        }
+
+        .cve-host-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px 8px 0 0;
+            border-bottom: none;
+        }
+
+        .cve-host-label .host-ip {
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+
+        .cve-list { display: flex; flex-direction: column; }
+
+        .cve-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--border);
+            padding: 16px;
+            transition: background 0.15s;
+        }
+
+        .cve-card:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .cve-card:hover { background: var(--bg-hover); }
+
+        .cve-card.sev-border-critical { border-left-color: var(--red); }
+        .cve-card.sev-border-high     { border-left-color: #f0883e; }
+        .cve-card.sev-border-medium   { border-left-color: var(--orange); }
+        .cve-card.sev-border-low      { border-left-color: var(--green); }
+
+        .cve-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .cve-id {
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--cyan);
+        }
+
+        .cvss-chip {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .cve-date {
+            color: var(--text-muted);
+            font-size: 11px;
+            margin-left: auto;
+        }
+
+        .cve-desc {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .cve-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+
+        .cve-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .cve-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--blue);
+            text-decoration: none;
+            padding: 3px 10px;
+            background: var(--blue-dim);
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+
+        .cve-link:hover { background: #1f3a7f; }
+
+        /* ═══════════════════════════════════════
+           SCAN CONTROLS PAGE
+        ═══════════════════════════════════════ */
+        .scan-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .scan-option-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: border-color 0.15s;
+        }
+
+        .scan-option-card:hover { border-color: var(--border-bright); }
+
+        .scan-option-icon { font-size: 32px; }
+
+        .scan-option-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .scan-option-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .scan-option-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ═══════════════════════════════════════
+           EMPTY STATE
+        ═══════════════════════════════════════ */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+        .empty-state-desc { font-size: 13px; color: var(--text-muted); }
+
+        /* ═══════════════════════════════════════
+           LOG / TERMINAL
+        ═══════════════════════════════════════ */
+        .terminal {
+            background: #010409;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 12px;
+            line-height: 1.7;
+            max-height: 300px;
+            overflow-y: auto;
+            color: #8b949e;
+        }
+
+        .log-info    { color: #79c0ff; }
+        .log-success { color: #56d364; }
+        .log-error   { color: #ff7b72; }
+        .log-warn    { color: #e3b341; }
+
+        /* ═══════════════════════════════════════
+           DIVIDER
+        ═══════════════════════════════════════ */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        /* ═══════════════════════════════════════
+           SCROLLBAR
+        ═══════════════════════════════════════ */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+
+    <!-- ═══════════════ SIDEBAR ═══════════════ -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h1>🛡️ NetScan</h1>
+            <p>Kali Linux Security Tool</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Navigation</div>
+
+            <button class="nav-item active" onclick="showPage('dashboard')">
+                <span class="nav-icon">📊</span> Dashboard
+            </button>
+
+            <button class="nav-item" onclick="showPage('scan')">
+                <span class="nav-icon">🔍</span> Scan Controls
+            </button>
+
+            <button class="nav-item" onclick="showPage('devices')">
+                <span class="nav-icon">📡</span> Devices
+                <span class="nav-badge" id="nav-badge-devices">0</span>
+            </button>
+
+            <button class="nav-item" onclick="showPage('ports')">
+                <span class="nav-icon">🔓</span> Open Ports
+                <span class="nav-badge" id="nav-badge-ports">0</span>
+            </button>
+
+            <button class="nav-item" onclick="showPage('cve')">
+                <span class="nav-icon">⚠️</span> CVE / Vulns
+                <span class="nav-badge" id="nav-badge-cve">0</span>
+            </button>
+
+            <button class="nav-item" onclick="showPage('log')">
+                <span class="nav-icon">🖥️</span> Activity Log
+            </button>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="btn btn-ghost" style="width:100%"
+                    onclick="exportResults()">
+                💾 Export JSON
+            </button>
+        </div>
+    </aside>
+
+    <!-- ═══════════════ MAIN ═══════════════ -->
+    <div class="main">
+
+        <!-- Topbar -->
+        <div class="topbar">
+            <span class="topbar-title" id="topbar-title">Dashboard</span>
+            <div class="topbar-actions">
+                <span id="last-scan-label"
+                      style="font-size:12px; color:var(--text-muted)">
+                    No scan yet
+                </span>
+                <button class="btn btn-ghost btn-sm"
+                        onclick="clearAll()">🗑 Clear</button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- Status alert (global) -->
+            <div id="global-alert" style="display:none"></div>
+
+            <!-- Progress -->
+            <div id="progress-wrap" class="progress-wrap" style="display:none">
+                <div class="progress-label">
+                    <span id="progress-text">Starting...</span>
+                    <span id="progress-pct">0%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-bar animated" id="progress-bar"></div>
+                </div>
+            </div>
+
+            <!-- ─────── PAGE: DASHBOARD ─────── -->
+            <div class="page active" id="page-dashboard">
+
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-card-top">
+                            <span class="stat-label">Devices</span>
+                            <span class="stat-icon">📡</span>
+                        </div>
+                        <div class="stat-value" id="stat-devices">0</div>
+                        <div class="stat-sub">Connected to network</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-card-top">
+                            <span class="stat-label">Open Ports</span>
+                            <span class="stat-icon">🔓</span>
+                        </div>
+                        <div class="stat-value" id="stat-ports">0</div>
+                        <div class="stat-sub">Across all devices</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-card-top">
+                            <span class="stat-label">Critical CVEs</span>
+                            <span class="stat-icon">🔴</span>
+                        </div>
+                        <div class="stat-value" id="stat-critical">0</div>
+                        <div class="stat-sub">Needs immediate action</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-card-top">
+                            <span class="stat-label">Total CVEs</span>
+                            <span class="stat-icon">⚠️</span>
+                        </div>
+                        <div class="stat-value" id="stat-cves">0</div>
+                        <div class="stat-sub">Vulnerabilities found</div>
+                    </div>
+                </div>
+
+                <!-- Quick actions -->
+                <div class="section-header">
+                    <span class="section-title">⚡ Quick Actions</span>
+                </div>
+
+                <div class="scan-grid">
+                    <div class="scan-option-card">
+                        <div class="scan-option-icon">⚡</div>
+                        <div class="scan-option-title">Quick Device Scan</div>
+                        <div class="scan-option-desc">
+                            Discover all devices on your network.
+                            Shows IP, MAC, vendor, hostname.
+                            Fast and lightweight.
+                        </div>
+                        <div class="scan-option-time">⏱ ~30 seconds</div>
+                        <button class="btn btn-warning"
+                                id="btn-quick-dash"
+                                onclick="runQuickScan()">
+                            ⚡ Run Quick Scan
+                        </button>
+                    </div>
+
+                    <div class="scan-option-card">
+                        <div class="scan-option-icon">🔓</div>
+                        <div class="scan-option-title">Port Scan</div>
+                        <div class="scan-option-desc">
+                            Scan open ports on all discovered devices.
+                            Detects services and versions.
+                            Requires device scan first.
+                        </div>
+                        <div class="scan-option-time">⏱ ~2-5 minutes</div>
+                        <button class="btn btn-primary"
+                                id="btn-port-dash"
+                                onclick="runPortScan()">
+                            🔓 Run Port Scan
+                        </button>
+                    </div>
+
+                    <div class="scan-option-card">
+                        <div class="scan-option-icon">🛡️</div>
+                        <div class="scan-option-title">Full Scan + CVE</div>
+                        <div class="scan-option-desc">
+                            Complete scan: devices, ports, and
+                            vulnerability check against NVD CVE
+                            database with severity ratings.
+                        </div>
+                        <div class="scan-option-time">⏱ ~10-20 minutes</div>
+                        <button class="btn btn-danger"
+                                id="btn-full-dash"
+                                onclick="runFullScan()">
+                            🛡️ Run Full Scan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent devices preview -->
+                <hr class="divider">
+                <div class="section-header">
+                    <span class="section-title">
+                        📡 Recent Devices
+                        <span class="section-count" id="dash-device-count">0</span>
+                    </span>
+                    <button class="btn btn-ghost btn-sm"
+                            onclick="showPage('devices')">
+                        View All →
+                    </button>
+                </div>
+                <div id="dash-devices-preview">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📡</div>
+                        <div class="empty-state-title">No devices yet</div>
+                        <div class="empty-state-desc">
+                            Run a scan to discover network devices
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─────── PAGE: SCAN ─────── -->
+            <div class="page" id="page-scan">
+
+                <div class="scan-grid" style="margin-bottom:24px">
+                    <div class="scan-option-card">
+                        <div class="scan-option-icon">⚡</div>
+                        <div class="scan-option-title">Quick Device Scan</div>
+                        <div class="scan-option-desc">
+                            Uses ARP, arp-scan tool, and system
+                            ARP cache to find all devices.
+                            Multiple methods for best coverage.
+                        </div>
+                        <div class="scan-option-time">⏱ ~30 seconds</div>
+                        <button class="btn btn-warning"
+                                id="btn-quick"
+                                onclick="runQuickScan()">
+                            ⚡ Start Quick Scan
+                        </button>
+                    </div>
+
+                    <div class="scan-option-card">
+                        <div class="scan-option-icon">🔓</div>
+                        <div class="scan-option-title">Port Scan</div>
+                        <div class="scan-option-desc">
+                            Runs nmap -sV on all found devices.
+                            Identifies open ports, services,
+                            product names and versions.
+                        </div>
+                        <div class="scan-option-time">⏱ ~2-5 minutes</div>
+                        <button class="btn btn-primary"
+                                id="btn-port"
+                                onclick="runPortScan()">
+                            🔓 Start Port Scan
+                        </button>
+                    </div>
+
+                    <div class="scan-option-card">
+                        <div class="scan-option-icon">⚠️</div>
+                        <div class="scan-option-title">CVE Lookup</div>
+                        <div class="scan-option-desc">
+                            Queries NVD database for each
+                            detected service. Returns CVE IDs,
+                            CVSS scores, and severity.
+                        </div>
+                        <div class="scan-option-time">⏱ ~5-10 minutes</div>
+                        <button class="btn btn-ghost"
+                                id="btn-cve"
+                                onclick="runCVEScan()">
+                            ⚠️ Start CVE Lookup
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="section-header">
+                    <span class="section-title">🛡️ Full Automated Scan</span>
+                </div>
+
+                <div class="scan-option-card"
+                     style="max-width:500px; flex-direction:row; align-items:center; gap:20px">
+                    <div>
+                        <div class="scan-option-title">Run Everything</div>
+                        <div class="scan-option-desc">
+                            Device discovery → Port scan → CVE lookup.
+                            All in one click. Takes 10-20 minutes.
+                        </div>
+                        <div class="scan-option-time">⏱ ~10-20 minutes</div>
+                    </div>
+                    <button class="btn btn-danger"
+                            id="btn-full"
+                            onclick="runFullScan()"
+                            style="white-space:nowrap; flex-shrink:0">
+                        🛡️ Full Scan
+                    </button>
+                </div>
+            </div>
+
+            <!-- ─────── PAGE: DEVICES ─────── -->
+            <div class="page" id="page-devices">
+                <div class="section-header">
+                    <span class="section-title">
+                        📡 Connected Devices
+                        <span class="section-count" id="devices-count">0</span>
+                    </span>
+                    <button class="btn btn-warning btn-sm"
+                            onclick="runQuickScan()">
+                        ⚡ Re-scan Devices
+                    </button>
+                </div>
+                <div class="devices-grid" id="devices-grid">
+                    <div class="empty-state" style="grid-column:1/-1">
+                        <div class="empty-state-icon">📡</div>
+                        <div class="empty-state-title">No devices found</div>
+                        <div class="empty-state-desc">
+                            Run a Quick Scan to discover devices
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─────── PAGE: PORTS ─────── -->
+            <div class="page" id="page-ports">
+                <div class="section-header">
+                    <span class="section-title">
+                        🔓 Open Ports
+                        <span class="section-count" id="ports-count">0</span>
+                    </span>
+                    <button class="btn btn-primary btn-sm"
+                            onclick="runPortScan()">
+                        🔓 Re-scan Ports
+                    </button>
+                </div>
+                <div id="ports-container">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🔓</div>
+                        <div class="empty-state-title">No port data</div>
+                        <div class="empty-state-desc">
+                            Run a Port Scan first
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─────── PAGE: CVE ─────── -->
+            <div class="page" id="page-cve">
+                <div class="section-header">
+                    <span class="section-title">
+                        ⚠️ CVE / Vulnerabilities
+                        <span class="section-count" id="cve-count">0</span>
+                    </span>
+                    <button class="btn btn-ghost btn-sm"
+                            onclick="runCVEScan()">
+                        ⚠️ Re-check CVEs
+                    </button>
+                </div>
+                <div id="cve-container">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div class="empty-state-title">No CVE data</div>
+                        <div class="empty-state-desc">
+                            Run a Full Scan or CVE Lookup
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─────── PAGE: LOG ─────── -->
+            <div class="page" id="page-log">
+                <div class="section-header">
+                    <span class="section-title">🖥️ Activity Log</span>
+                    <button class="btn btn-ghost btn-sm"
+                            onclick="clearLog()">Clear</button>
+                </div>
+                <div class="terminal" id="log-terminal">
+                    <span class="log-info">[*] Scanner ready. Click a scan button to start.</span>
+                </div>
+            </div>
+
+        </div><!-- /content -->
+    </div><!-- /main -->
+</div><!-- /app-layout -->
+
+<script>
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+const state = {
+    devices:      [],
+    port_scans:   [],
+    vulns:        [],
+    scanning:     false
+};
+
+// ═══════════════════════════════════════════════════
+//  SECURITY HELPER – XSS prevention
+//  Always run untrusted strings through this before
+//  inserting them into innerHTML template literals.
+//  (Fixes: raw CVE descriptions / hostnames / vendor
+//   names from external APIs injected into the DOM)
+// ═══════════════════════════════════════════════════
+function esc(str) {
+    if (str === null || str === undefined) return '';
+    const d = document.createElement('div');
+    d.textContent = String(str);
+    return d.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════
+//  PAGE NAVIGATION
+// ═══════════════════════════════════════════════════
+function showPage(name) {
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    // Show target
+    document.getElementById(`page-${name}`).classList.add('active');
+
+    // Update nav
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    // Update topbar title
+    const titles = {
+        dashboard: 'Dashboard',
+        scan:      'Scan Controls',
+        devices:   'Connected Devices',
+        ports:     'Open Ports',
+        cve:       'CVE / Vulnerabilities',
+        log:       'Activity Log'
+    };
+    document.getElementById('topbar-title').textContent = titles[name] || name;
+}
+
+// ═══════════════════════════════════════════════════
+//  LOGGING
+// ═══════════════════════════════════════════════════
+function log(msg, type = 'info') {
+    const terminal = document.getElementById('log-terminal');
+    const classes  = { info: 'log-info', success: 'log-success',
+                       error: 'log-error', warn: 'log-warn' };
+    const prefix   = { info: '[*]', success: '[+]',
+                       error: '[!]', warn: '[~]' };
+    const now = new Date().toLocaleTimeString();
+    terminal.innerHTML +=
+        `\n<span class="${classes[type]}">${now} ${prefix[type]} ${msg}</span>`;
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+function clearLog() {
+    document.getElementById('log-terminal').innerHTML =
+        '<span class="log-info">[*] Log cleared.</span>';
+}
+
+// ═══════════════════════════════════════════════════
+//  ALERTS
+// ═══════════════════════════════════════════════════
+function showAlert(msg, type = 'info') {
+    const icons = { info: 'ℹ️', success: '✅', error: '❌', warning: '⚠️' };
+    const el = document.getElementById('global-alert');
+    el.className = `alert alert-${type}`;
+    el.innerHTML = `<span class="alert-icon">${icons[type]}</span><span>${msg}</span>`;
+    el.style.display = 'flex';
+    if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+function hideAlert() {
+    document.getElementById('global-alert').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════
+//  PROGRESS
+// ═══════════════════════════════════════════════════
+function showProgress(pct, text) {
+    document.getElementById('progress-wrap').style.display = 'block';
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-text').textContent = text;
+    document.getElementById('progress-pct').textContent  = pct + '%';
+}
+
+function hideProgress() {
+    setTimeout(() => {
+        document.getElementById('progress-wrap').style.display = 'none';
+    }, 1500);
+}
+
+// ═══════════════════════════════════════════════════
+//  DISABLE / ENABLE ALL SCAN BUTTONS
+// ═══════════════════════════════════════════════════
+const SCAN_BTNS = [
+    'btn-quick', 'btn-port', 'btn-cve', 'btn-full',
+    'btn-quick-dash', 'btn-port-dash', 'btn-full-dash'
+];
+
+function disableBtns() {
+    SCAN_BTNS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+    });
+}
+
+function enableBtns() {
+    SCAN_BTNS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = false;
+    });
+}
+
+// ═══════════════════════════════════════════════════
+//  API HELPER
+// ═══════════════════════════════════════════════════
+async function apiPost(url) {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.success === false) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+    }
+
+    return data;
+}
+
+// ═══════════════════════════════════════════════════
+//  QUICK SCAN
+// ═══════════════════════════════════════════════════
+async function runQuickScan() {
+    if (state.scanning) return;
+    state.scanning = true;
+    disableBtns();
+
+    log('Starting quick device scan...', 'info');
+    showAlert('⚡ Scanning network for devices...', 'info');
+    showProgress(10, 'Discovering devices...');
+
+    try {
+        showProgress(40, 'Sending ARP packets...');
+        const data = await apiPost('/api/quick-scan');
+
+        showProgress(100, 'Done!');
+        state.devices = data.devices || [];
+
+        renderDevices(state.devices);
+        updateStats();
+        updateBadges();
+
+        const ts = data.timestamp || new Date().toLocaleString();
+        document.getElementById('last-scan-label').textContent = `Scanned: ${ts}`;
+
+        showAlert(`✅ Found ${state.devices.length} device(s)!`, 'success');
+        log(`Quick scan complete. ${state.devices.length} device(s) found.`, 'success');
+
+    } catch (err) {
+        showAlert(`❌ Scan failed: ${err.message}`, 'error');
+        log(`Error: ${err.message}`, 'error');
+    } finally {
+        state.scanning = false;
+        enableBtns();
+        hideProgress();
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  PORT SCAN
+// ═══════════════════════════════════════════════════
+async function runPortScan() {
+    if (state.scanning) return;
+
+    if (state.devices.length === 0) {
+        showAlert('⚠️ Run Quick Scan first to discover devices!', 'warning');
+        log('Port scan aborted: no devices found yet.', 'warn');
+        return;
+    }
+
+    state.scanning = true;
+    disableBtns();
+
+    log(`Starting port scan on ${state.devices.length} device(s)...`, 'info');
+    showAlert('🔓 Scanning ports on all devices...', 'info');
+    showProgress(10, 'Starting port scan...');
+
+    try {
+        showProgress(30, `Scanning ${state.devices.length} host(s)...`);
+        const data = await apiPost('/api/port-scan');
+
+        showProgress(100, 'Port scan complete!');
+        state.port_scans = data.port_scans || [];
+
+        renderPorts(state.port_scans);
+        updateStats();
+        updateBadges();
+
+        const totalPorts = state.port_scans.reduce(
+            (sum, s) => sum + (s.open_ports || []).length, 0
+        );
+
+        showAlert(`✅ Port scan done! Found ${totalPorts} open port(s).`, 'success');
+        log(`Port scan complete. ${totalPorts} open port(s) found.`, 'success');
+
+    } catch (err) {
+        showAlert(`❌ Port scan failed: ${err.message}`, 'error');
+        log(`Error: ${err.message}`, 'error');
+    } finally {
+        state.scanning = false;
+        enableBtns();
+        hideProgress();
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  CVE SCAN
+// ═══════════════════════════════════════════════════
+async function runCVEScan() {
+    if (state.scanning) return;
+
+    if (state.port_scans.length === 0) {
+        showAlert('⚠️ Run Port Scan first!', 'warning');
+        log('CVE scan aborted: no port data.', 'warn');
+        return;
+    }
+
+    state.scanning = true;
+    disableBtns();
+
+    log('Starting CVE lookup...', 'info');
+    showAlert('⚠️ Querying NVD CVE database...', 'info');
+    showProgress(10, 'Connecting to NVD API...');
+
+    try {
+        showProgress(40, 'Checking CVEs (this takes a while)...');
+        const data = await apiPost('/api/cve-scan');
+
+        showProgress(100, 'CVE scan complete!');
+        state.vulns = data.vulnerabilities || [];
+
+        renderCVE(state.vulns);
+        updateStats();
+        updateBadges();
+
+        showAlert(`✅ CVE scan done! Found ${state.vulns.length} vulnerable service(s).`, 'success');
+        log(`CVE scan complete. ${state.vulns.length} vulnerable service(s).`, 'success');
+
+    } catch (err) {
+        showAlert(`❌ CVE scan failed: ${err.message}`, 'error');
+        log(`Error: ${err.message}`, 'error');
+    } finally {
+        state.scanning = false;
+        enableBtns();
+        hideProgress();
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  FULL SCAN
+// ═══════════════════════════════════════════════════
+async function runFullScan() {
+    if (state.scanning) return;
+    state.scanning = true;
+    disableBtns();
+
+    log('Starting full scan (devices + ports + CVE)...', 'info');
+    showAlert('🛡️ Full scan in progress... Please wait (10-20 min)', 'info');
+    showProgress(5, 'Initializing full scan...');
+
+    // Animated progress
+    const steps = [
+        [15, 'Discovering devices...'],
+        [35, 'Scanning ports...'],
+        [60, 'Checking CVE database...'],
+        [80, 'Analyzing vulnerabilities...'],
+        [90, 'Building report...'],
+    ];
+
+    let stepIdx = 0;
+    const interval = setInterval(() => {
+        if (stepIdx < steps.length) {
+            showProgress(steps[stepIdx][0], steps[stepIdx][1]);
+            log(steps[stepIdx][1], 'info');
+            stepIdx++;
+        }
+    }, 45000);
+
+    try {
+        const data = await apiPost('/api/full-scan');
+        clearInterval(interval);
+
+        showProgress(100, 'Full scan complete!');
+
+        state.devices    = data.devices    || [];
+        state.port_scans = data.port_scans || [];
+        state.vulns      = data.vulnerabilities || [];
+
+        renderDevices(state.devices);
+        renderPorts(state.port_scans);
+        renderCVE(state.vulns);
+        updateStats();
+        updateBadges();
+
+        const ts = data.timestamp || new Date().toLocaleString();
+        document.getElementById('last-scan-label').textContent = `Scanned: ${ts}`;
+
+        showAlert(`✅ Full scan complete! ${state.devices.length} devices, ${state.vulns.length} vulnerabilities.`, 'success');
+        log(`Full scan done. Devices: ${state.devices.length}, Vulns: ${state.vulns.length}`, 'success');
+
+    } catch (err) {
+        clearInterval(interval);
+        showAlert(`❌ Full scan failed: ${err.message}`, 'error');
+        log(`Error: ${err.message}`, 'error');
+    } finally {
+        state.scanning = false;
+        enableBtns();
+        hideProgress();
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER DEVICES
+// ═══════════════════════════════════════════════════
+function deviceEmoji(vendor, type) {
+    const s = (vendor + type).toLowerCase();
+    if (s.includes('apple'))                         return '🍎';
+    if (s.includes('router') || s.includes('gateway')) return '📡';
+    if (s.includes('samsung') || s.includes('android')) return '📱';
+    if (s.includes('raspberry'))                     return '🫐';
+    if (s.includes('vmware') || s.includes('virtual')) return '💻';
+    if (s.includes('amazon') || s.includes('google')) return '📺';
+    if (s.includes('intel') || s.includes('pc'))     return '🖥️';
+    return '🔌';
+}
+
+function renderDevices(devices) {
+    const grid    = document.getElementById('devices-grid');
+    const preview = document.getElementById('dash-devices-preview');
+    const count   = document.getElementById('devices-count');
+    const dashCnt = document.getElementById('dash-device-count');
+
+    count.textContent    = devices.length;
+    dashCnt.textContent  = devices.length;
+
+    if (devices.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1">
+                <div class="empty-state-icon">📡</div>
+                <div class="empty-state-title">No devices found</div>
+                <div class="empty-state-desc">Run a Quick Scan</div>
+            </div>`;
+        preview.innerHTML = grid.innerHTML;
+        return;
+    }
+
+    // Sort: gateway first
+    const sorted = [...devices].sort((a, b) => b.is_gateway - a.is_gateway);
+
+    grid.innerHTML = sorted.map(d => `
+        <div class="device-card ${d.is_gateway ? 'is-gateway' : ''}">
+            <div class="device-card-header">
+                <span class="device-emoji">${deviceEmoji(d.vendor, d.device_type)}</span>
+                <span class="device-name">${esc(d.hostname !== 'Unknown' ? d.hostname : d.ip)}</span>
+                ${d.is_gateway
+                    ? '<span class="badge badge-orange">🏠 Gateway</span>'
+                    : '<span class="badge badge-green">● Online</span>'}
+            </div>
+            <div class="device-body">
+                <div class="device-field">
+                    <label>IP Address</label>
+                    <span>${esc(d.ip)}</span>
+                </div>
+                <div class="device-field">
+                    <label>Status</label>
+                    <span style="color:var(--green)">● Online</span>
+                </div>
+                <div class="device-field full">
+                    <label>MAC Address</label>
+                    <span>${esc(d.mac)}</span>
+                </div>
+                <div class="device-field full">
+                    <label>Vendor / Brand</label>
+                    <span style="color:var(--text-primary);font-family:inherit">${esc(d.vendor)}</span>
+                </div>
+                <div class="device-field full">
+                    <label>Device Type</label>
+                    <span style="color:var(--purple);font-family:inherit">${esc(d.device_type)}</span>
+                </div>
+                <div class="device-field full">
+                    <label>Hostname</label>
+                    <span>${esc(d.hostname)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    // Dashboard preview - show first 3
+    preview.innerHTML = sorted.slice(0, 3).map(d => `
+        <div class="device-card ${d.is_gateway ? 'is-gateway' : ''}" style="margin-bottom:10px">
+            <div class="device-card-header">
+                <span class="device-emoji">${deviceEmoji(d.vendor, d.device_type)}</span>
+                <span class="device-name">${esc(d.hostname !== 'Unknown' ? d.hostname : d.ip)}</span>
+                ${d.is_gateway
+                    ? '<span class="badge badge-orange">🏠 Gateway</span>'
+                    : '<span class="badge badge-green">● Online</span>'}
+            </div>
+            <div class="device-body">
+                <div class="device-field">
+                    <label>IP</label><span>${esc(d.ip)}</span>
+                </div>
+                <div class="device-field">
+                    <label>MAC</label><span>${esc(d.mac)}</span>
+                </div>
+                <div class="device-field full">
+                    <label>Vendor</label>
+                    <span style="font-family:inherit">${esc(d.vendor)}</span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER PORTS
+// ═══════════════════════════════════════════════════
+function renderPorts(portScans) {
+    const container = document.getElementById('ports-container');
+    const countEl   = document.getElementById('ports-count');
+
+    let totalPorts = 0;
+    portScans.forEach(s => totalPorts += (s.open_ports || []).length);
+    countEl.textContent = totalPorts;
+
+    if (totalPorts === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">🔓</div>
+                <div class="empty-state-title">No open ports found</div>
+                <div class="empty-state-desc">Run Port Scan first</div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = portScans.map(scan => {
+        if (!scan.open_ports || scan.open_ports.length === 0) return '';
+
+        const rows = scan.open_ports.map(p => `
+            <tr>
+                <td><span class="port-num">${esc(p.port)}</span></td>
+                <td><span class="badge badge-green">OPEN</span></td>
+                <td>${esc(p.protocol.toUpperCase())}</td>
+                <td><span class="service-name">${esc(p.service)}</span></td>
+                <td>${p.product !== 'unknown' ? esc(p.product) : '—'}</td>
+                <td>${p.version !== 'unknown' ? esc(p.version) : '—'}</td>
+            </tr>
+        `).join('');
+
+        const hostname = scan.hostname || 'Unknown';
+
+        return `
+            <div class="host-block">
+                <div class="host-block-header">
+                    <span class="host-ip">${esc(scan.ip)}</span>
+                    <span class="host-name">${esc(hostname)}</span>
+                    <span class="badge badge-blue" style="margin-left:auto">
+                        ${scan.open_ports.length} open port(s)
+                    </span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Port</th>
+                            <th>State</th>
+                            <th>Protocol</th>
+                            <th>Service</th>
+                            <th>Product</th>
+                            <th>Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER CVE
+// ═══════════════════════════════════════════════════
+function severityBadge(sev) {
+    const s = (sev || 'unknown').toLowerCase();
+    return `<span class="badge sev-${s}">${sev}</span>`;
+}
+
+function renderCVE(vulns) {
+    const container = document.getElementById('cve-container');
+    const countEl   = document.getElementById('cve-count');
+
+    const totalCVEs = vulns.reduce((sum, v) => sum + v.vulnerabilities.length, 0);
+    countEl.textContent = totalCVEs;
+
+    if (totalCVEs === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">✅</div>
+                <div class="empty-state-title">No CVEs found</div>
+                <div class="empty-state-desc">
+                    Either no vulnerabilities detected or service
+                    versions could not be identified
+                </div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = vulns.map(host => {
+        if (!host.vulnerabilities || host.vulnerabilities.length === 0) return '';
+
+        const cards = host.vulnerabilities.map(cve => {
+            const sev   = (cve.severity || 'unknown').toLowerCase();
+            const score = cve.cvss_score || 'N/A';
+            const refs  = (cve.references || []).slice(0, 2).map(r =>
+                `<a href="${esc(r)}" target="_blank" rel="noopener noreferrer" class="cve-link">🔗 Reference</a>`
+            ).join('');
+
+            return `
+                <div class="cve-card sev-border-${esc(sev)}">
+                    <div class="cve-top">
+                        <span class="cve-id">${esc(cve.cve_id)}</span>
+                        ${severityBadge(cve.severity)}
+                        <span class="cvss-chip">CVSS ${esc(String(score))}</span>
+                        <span class="cve-date">📅 ${esc(cve.published || 'N/A')}</span>
+                    </div>
+                    <p class="cve-desc">${esc(cve.description)}</p>
+                    <div class="cve-meta">Vector: ${esc(cve.vector || 'N/A')}</div>
+                    <div class="cve-links">
+                        <a href="${esc(cve.nvd_url)}" target="_blank" rel="noopener noreferrer" class="cve-link">
+                            📋 NVD Details
+                        </a>
+                        ${refs}
+                    </div>
+                </div>`;
+        }).join('');
+
+        return `
+            <div class="cve-host-block">
+                <div class="cve-host-label">
+                    <span class="host-ip">${esc(host.ip)}</span>
+                    <span class="badge badge-gray">${esc(host.hostname)}</span>
+                    <span class="badge badge-blue">
+                        Port ${esc(String(host.port))} / ${esc(host.service)}
+                    </span>
+                    <span class="badge badge-purple">
+                        ${esc(host.product)} ${esc(host.version)}
+                    </span>
+                    ${severityBadge(host.highest_severity)}
+                </div>
+                <div class="cve-list">${cards}</div>
+            </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  STATS & BADGES
+// ═══════════════════════════════════════════════════
+function updateStats() {
+    const totalPorts = state.port_scans.reduce(
+        (sum, s) => sum + (s.open_ports || []).length, 0
+    );
+    const totalCVEs = state.vulns.reduce(
+        (sum, v) => sum + v.vulnerabilities.length, 0
+    );
+    const criticalCVEs = state.vulns.reduce(
+        (sum, v) => sum + v.vulnerabilities.filter(
+            c => c.severity === 'CRITICAL'
+        ).length, 0
+    );
+
+    document.getElementById('stat-devices').textContent  = state.devices.length;
+    document.getElementById('stat-ports').textContent    = totalPorts;
+    document.getElementById('stat-critical').textContent = criticalCVEs;
+    document.getElementById('stat-cves').textContent     = totalCVEs;
+}
+
+function updateBadges() {
+    const totalPorts = state.port_scans.reduce(
+        (sum, s) => sum + (s.open_ports || []).length, 0
+    );
+    const totalCVEs = state.vulns.reduce(
+        (sum, v) => sum + v.vulnerabilities.length, 0
+    );
+
+    document.getElementById('nav-badge-devices').textContent = state.devices.length;
+    document.getElementById('nav-badge-ports').textContent   = totalPorts;
+    document.getElementById('nav-badge-cve').textContent     = totalCVEs;
+}
+
+// ═══════════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════════
+function exportResults() {
+    window.location.href = '/api/export';
+}
+
+// ═══════════════════════════════════════════════════
+//  CLEAR
+// ═══════════════════════════════════════════════════
+async function clearAll() {
+    try {
+        await fetch('/api/clear', { method: 'POST' });
+        state.devices    = [];
+        state.port_scans = [];
+        state.vulns      = [];
+
+        renderDevices([]);
+        renderPorts([]);
+        renderCVE([]);
+        updateStats();
+        updateBadges();
+        hideAlert();
+        log('All results cleared.', 'warn');
+    } catch(e) {
+        log(`Clear error: ${e.message}`, 'error');
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT - Load existing results on page load
+// ═══════════════════════════════════════════════════
+window.addEventListener('load', async () => {
+    log('Scanner UI loaded. Server connection OK.', 'success');
+
+    // Test server connection
+    try {
+        const r = await fetch('/ping');
+        const d = await r.json();
+        log(`Server: ${d.message}`, 'success');
+    } catch (e) {
+        log('Could not reach server!', 'error');
+        showAlert('❌ Cannot connect to server. Is it running?', 'error');
+        return;
+    }
+
+    // Load any existing results
+    try {
+        const r = await fetch('/api/results');
+        const d = await r.json();
+
+        if (d.devices && d.devices.length > 0) {
+            state.devices    = d.devices    || [];
+            state.port_scans = d.port_scans || [];
+            state.vulns      = d.vulnerabilities || [];
+
+            renderDevices(state.devices);
+            renderPorts(state.port_scans);
+            renderCVE(state.vulns);
+            updateStats();
+            updateBadges();
+
+            if (d.timestamp) {
+                document.getElementById('last-scan-label').textContent =
+                    `Last scan: ${d.timestamp}`;
+            }
+            log(`Loaded existing results: ${state.devices.length} devices.`, 'info');
+        }
+    } catch (e) {
+        log('No existing results found.', 'info');
+    }
+});
+</script>
+
+</body>
+</html>
