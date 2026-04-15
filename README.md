@@ -34,8 +34,8 @@ A local-network security scanner with a web UI. Discovers devices via ARP, scans
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/d0tahmed/netscan.git
-cd netscan
+git clone https://github.com/d0tahmed/network-scanner.git
+cd network-scanner
 
 # 2. (Recommended) Create a virtual environment
 python3 -m venv venv
