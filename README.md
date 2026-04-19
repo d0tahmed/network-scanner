@@ -1,115 +1,194 @@
-# 🛡️ NetScan — Network Security Scanner
+# Network-scanner v2🔍
 
-A local-network security scanner with a web UI. Discovers devices via ARP, scans open ports with nmap, and cross-references detected services against the NVD CVE database to surface known vulnerabilities — all from a single browser tab.
+**A professional-grade local network security scanner.**  
+Discover devices, enumerate open ports, and check for known CVEs — all from a slick dark web dashboard or a powerful CLI.
 
-> ⚠️ **For authorized use only.**  
-> Only scan networks you own or have **explicit written permission** to test.  
-> Unauthorized scanning is illegal in most countries.
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
+![Flask](https://img.shields.io/badge/Flask-3.x-black?logo=flask)
+![Scapy](https://img.shields.io/badge/Scapy-2.5%2B-green)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Kali-red?logo=linux)
+
+> ⚠️ **Legal Notice:** Use NetScanX only on networks you own or have explicit written permission to scan. Unauthorized scanning is illegal under computer misuse laws in most countries.
 
 ---
 
 ## Features
 
-- **Device Discovery** — multi-method ARP scanning (scapy + arp-scan tool + system ARP cache) with automatic deduplication and MAC vendor lookup
-- **Port Scanning** — nmap `-sV -sC` service/version detection across common ports
-- **CVE Lookup** — queries the [NVD REST API](https://nvd.nist.gov/developers/vulnerabilities) for CVEs matching each detected service, with CVSS scoring and severity badges
-- **Web UI** — GitHub-dark themed dashboard with sidebar navigation, live activity log, and one-click JSON export
-- **XSS-safe** — all external data (hostnames, CVE descriptions, vendor names) is HTML-escaped before rendering
-
----
-
-## Requirements
-
-| Requirement | Notes |
+| Feature | Details |
 |---|---|
-| OS | Linux (tested on Kali Linux) |
-| Python | 3.8+ |
-| nmap | `sudo apt install nmap` |
-| arp-scan | `sudo apt install arp-scan` |
-| Root / sudo | Required for ARP and nmap raw-socket operations |
+| 🖥 **Device Discovery** | ARP scan (Scapy), arp-scan CLI, and ARP cache — triple-method deduplication |
+| 🔌 **Port Scanning** | Nmap service/version detection with concurrent multi-host support |
+| 🛡 **CVE Lookup** | NIST NVD API v2 integration with CVSS v3.1 severity scoring |
+| 🌐 **Web Dashboard** | Dark-themed Flask UI with live scan progress and JSON export |
+| ⌨️ **CLI Interface** | Full argparse CLI for automation and headless environments |
+| 📋 **Logging** | Structured logging to stderr and optional file output |
+| ⚙️ **Config** | Environment variable / `.env` based configuration |
 
 ---
 
-## Installation
+## Screenshots
+
+> Web dashboard with device discovery, port scan, and CVE results — all in one view.
+
+---
+
+## Quick Start
+
+### 1. System dependencies
 
 ```bash
-# 1. Clone the repo
+# Debian / Ubuntu / Kali
+sudo apt update
+sudo apt install nmap arp-scan python3-pip
+```
+
+### 2. Python dependencies
+
+```bash
 git clone https://github.com/d0tahmed/network-scanner.git
-cd network-scanner
-
-# 2. (Recommended) Create a virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# 3. Install Python dependencies
+cd netscanx
 pip install -r requirements.txt
+```
 
-# 4. Install system tools if not already present
-sudo apt update && sudo apt install -y nmap arp-scan
+### 3. Optional — NVD API key (recommended)
+
+Register for a free API key at [nvd.nist.gov/developers/request-an-api-key](https://nvd.nist.gov/developers/request-an-api-key).  
+Without a key the scanner is rate-limited to 5 requests per 30 seconds.
+
+```bash
+cp .env.example .env
+# Edit .env and add your key:
+# NVD_API_KEY=your-key-here
 ```
 
 ---
 
 ## Usage
 
+### Web Dashboard (recommended)
+
 ```bash
-sudo python3 web_interface.py
+sudo python web_interface.py
+# Open: http://localhost:5000
 ```
 
-Then open **http://localhost:5000** in your browser.
+Then use the buttons in order:
 
-> `sudo` is required because ARP scanning and nmap SYN scans need raw socket access.
+1. **Quick Scan** — find all devices on your network
+2. **Port Scan** — enumerate open ports on found devices
+3. **CVE Scan** — look up known vulnerabilities for detected services
+4. **Full Scan** — run all three steps automatically
 
-### Scan workflow
+### CLI
 
-1. **Quick Scan** (~30 s) — discovers all devices on your local network
-2. **Port Scan** (~2–5 min) — runs nmap on every discovered device
-3. **CVE Lookup** (~5–10 min) — checks NVD for each detected service
-4. **Full Scan** — runs all three steps automatically in sequence
+```bash
+# Device discovery only
+sudo python cli.py scan
+
+# Discovery + port scan on specific ports
+sudo python cli.py scan --ports 22,80,443,8080
+
+# Full scan (device + ports + CVE) saved to file
+sudo python cli.py scan --full --output report.json
+
+# Specify a network interface
+sudo python cli.py scan --interface wlan0 --full
+
+# Launch web UI on a custom port
+sudo python cli.py serve --port 8080
+```
 
 ---
 
 ## Project Structure
 
 ```
-netscan/
-├── web_interface.py        # Flask server + API routes
-├── scanner.py              # Multi-method ARP device discovery
-├── port_scanner.py         # Thread-safe nmap wrapper
-├── vulnerability_checker.py# NVD CVE API client with caching
+NETWORK-SCANNER/
+├── scanner.py              # Device discovery (ARP + ping sweep)
+├── port_scanner.py         # Port/service enumeration (nmap)
+├── vulnerability_checker.py # CVE lookup (NIST NVD API)
+├── web_interface.py        # Flask REST API + dashboard server
+├── cli.py                  # Argparse CLI
+├── config.py               # Centralized configuration
+├── utils/
+│   ├── __init__.py
+│   └── logger.py           # Logging setup
 ├── templates/
-│   └── report.html         # Single-page web UI
+│   └── report.html         # Web dashboard UI
 ├── requirements.txt
+├── .gitignore
 └── README.md
 ```
 
-> **Note:** Flask looks for templates in a `templates/` folder.  
-> Move `report.html` there, or adjust the `template_folder` argument in `web_interface.py`.
+---
+
+## Configuration
+
+All settings can be overridden via environment variables or a `.env` file in the project root.
+
+| Variable | Default | Description |
+|---|---|---|
+| `NVD_API_KEY` | *(none)* | NIST NVD API key (strongly recommended) |
+| `DEFAULT_PORTS` | Common 20 ports | Comma-separated ports to scan |
+| `NMAP_ARGUMENTS` | `-sV -sC -T4` | Raw nmap flags |
+| `ARP_TIMEOUT` | `3` | Scapy ARP timeout (seconds) |
+| `MAX_SCAN_WORKERS` | `5` | Concurrent port scan threads |
+| `FLASK_HOST` | `0.0.0.0` | Web server bind address |
+| `FLASK_PORT` | `5000` | Web server port |
+| `FLASK_DEBUG` | `false` | Enable Flask debug mode |
+| `LOG_LEVEL` | `INFO` | Logging verbosity (`DEBUG`, `INFO`, `WARNING`) |
+| `LOG_FILE` | *(none)* | Optional log file path |
 
 ---
 
-## Screenshots
+## API Reference
 
-> *(Add a screenshot of the dashboard here)*
+All scan endpoints accept `POST` with no body required.
 
----
-
-## Known Limitations
-
-- Scanning large subnets (e.g. `/16`) can be very slow; designed for home/lab `/24` networks
-- NVD CVE lookups are rate-limited to 5 requests per 30 seconds without an API key — add one via `NVDAPIKEY` env var if you hit 403 errors frequently
-- Stealth/evasion is not a goal; this is a defender/auditor tool, not an offensive one
-
----
-
-## Legal Disclaimer
-
-This tool is intended for **educational purposes** and **authorized security auditing only**.  
-The author is not responsible for any misuse or damage caused by this software.  
-Always obtain proper authorization before scanning any network or device.
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Web dashboard |
+| `GET` | `/ping` | Health check |
+| `POST` | `/api/quick-scan` | Device discovery |
+| `POST` | `/api/port-scan` | Port scan (requires quick-scan first) |
+| `POST` | `/api/cve-scan` | CVE lookup (requires port-scan first) |
+| `POST` | `/api/full-scan` | All three in sequence |
+| `GET` | `/api/results` | Current scan state (JSON) |
+| `GET` | `/api/export` | Download results as `.json` |
+| `POST` | `/api/clear` | Reset scan state |
 
 ---
 
-## Author
+## Scan Methods
 
-Built by a junior cybersecurity red-teamer learning the craft. Contributions and feedback welcome via Issues and Pull Requests.
+NETWORK-SCANNER uses three ARP discovery methods and picks the best result for each IP:
+
+| Priority | Method | Requires |
+|---|---|---|
+| 1 (highest) | Scapy ARP broadcast | `root` / `sudo` |
+| 2 | `arp-scan` CLI | `arp-scan` package |
+| 3 | System ARP cache | Always available |
+
+A ping sweep (`nmap -sn`) is run first to wake devices that might not respond to ARP alone.
+
+---
+
+## Requirements
+
+- Python 3.10+
+- Linux (Kali, Ubuntu, Debian)
+- `nmap` installed (`sudo apt install nmap`)
+- Run as `root` / `sudo` (required for raw packet operations)
+
+---
+
+## Disclaimer
+
+NETWORK-SCANNER is an educational and authorized-use security tool. The author is not responsible for misuse. Always obtain proper authorization before scanning any network.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.

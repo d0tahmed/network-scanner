@@ -1,7 +1,46 @@
+# ── Python ────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-.env
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+.eggs/
+pip-wheel-metadata/
+
+# ── Virtual environments ───────────────────────────────────────────────────
+.venv/
 venv/
-*.json
+env/
+ENV/
+
+# ── Secrets / config ───────────────────────────────────────────────────────
+.env
+*.key
+*.pem
+*.crt
+secrets.json
+
+# ── Scan output ────────────────────────────────────────────────────────────
+netscanx_*.json
+scan_*.json
 *.log
+
+# ── IDE / editor ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── OS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+desktop.ini
+$RECYCLE.BIN/

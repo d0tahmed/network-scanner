@@ -1,8 +1,21 @@
-scapy==2.5.0
-python-nmap==0.7.1
-requests==2.31.0
-flask==3.0.0
-netifaces==0.11.0
-mac-vendor-lookup==0.1.12
-python-dotenv==1.0.0
-jinja2==3.1.2
+# NetScanX v2 — Python dependencies
+# Install with: pip install -r requirements.txt
+
+# ── Network scanning ───────────────────────────────────────────────────────
+scapy>=2.5.0          # ARP scanning and packet crafting
+python-nmap>=0.7.1    # python-nmap wrapper (requires nmap binary)
+netifaces>=0.11.0     # Network interface enumeration
+mac-vendor-lookup>=0.1.12  # MAC address → vendor resolution
+
+# ── CVE / NVD ──────────────────────────────────────────────────────────────
+requests>=2.31.0      # HTTP client for NVD API
+
+# ── Web interface ──────────────────────────────────────────────────────────
+flask>=3.0.0          # REST API + HTML dashboard
+
+# ── Optional ───────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0  # Load .env for NVD_API_KEY and other settings
+
+# ── System dependencies (install separately) ───────────────────────────────
+# nmap      → sudo apt install nmap
+# arp-scan  → sudo apt install arp-scan   (optional fallback)
